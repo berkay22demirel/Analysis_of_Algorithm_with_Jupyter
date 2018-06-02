@@ -1,188 +1,115 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <conio.h>
 
-typedef struct list {
-    int veri;
-    struct list *sonraki;
-} liste;
+struct dugum {
+    int icerik;
+    struct dugum *sol;
+    struct dugum *sag;
+};
 
-liste *yeni, *ilk = NULL, *gecici, *silGecici;
+struct ikili_arama_agaci{
+    struct dugum *kok;
+};
 
-void ekle(int sayi) {
-
-    if (ilk == NULL) {
-        ilk = (liste*) malloc(sizeof (liste));
-        ilk->veri = sayi;
-        ilk->sonraki = NULL;
+void ikili_arama_agaci_olustur(struct ikili_arama_agaci **agac){
+    *agac=(struct ikili_arama_agaci*)malloc(sizeof(struct ikili_arama_agaci));
+    if(*agac==NULL){
+        printf("Heapte gerekli yer ayrilamadi... exit ...\n");
+        exit(1);
     }
-
-    else {
-        if ((ilk->veri) > (sayi)) {
-            yeni = (liste*) malloc(sizeof (liste));
-            yeni->veri = sayi;
-            yeni->sonraki = ilk;
-            ilk = yeni;
-        } else {
-            gecici = ilk;
-            yeni = (liste*) malloc(sizeof (liste));
-            yeni->veri = sayi;
-            while (gecici != NULL) {
-                if (gecici->sonraki == NULL && (gecici->veri) <= (sayi)) {
-                    yeni->sonraki = NULL;
-                    gecici->sonraki = yeni;
-                    break;
-                }
-                if ((gecici->sonraki->veri) > (sayi)) {
-                    yeni->sonraki = gecici->sonraki;
-                    gecici->sonraki = yeni;
-                    break;
-                }
-                gecici = gecici->sonraki;
-            }
-        }
-    }
+    (*agac)->kok=NULL;
 }
 
-void listele() {
-    if (ilk == NULL) {
-        printf("Liste Bos\n");
+struct dugum* dugum_olustur(int icerik){
+    struct dugum *d = (struct dugum*)malloc(sizeof(struct dugum));
+    if(d==NULL){
+        printf("Heapte gerekli yer ayrilamadi... exit ...\n");
+        exit(1);
     }
-    else {
-        gecici = ilk;
-        while (gecici != NULL) {
-            printf("%d\n", gecici->veri);
-            gecici = gecici->sonraki;
-        }
-    }
-    bekle();
+    d->icerik = icerik; (*d).icerik=icerik;
+    d->sol=d->sag=NULL;
+    return d;
 }
 
-int ara(int sayi) {
-    int sayac = 0;
-    gecici = ilk;
-    while (gecici != NULL) {
-        sayac++;
-        if (gecici->veri == sayi)
-            return sayac;
-        gecici = gecici->sonraki;
+
+void ekle(struct ikili_arama_agaci *agac,int icerik){
+    struct dugum *dugum;
+    struct dugum *d;
+    struct dugum *geri;
+
+    d=agac->kok;
+    while(d!=NULL){
+        geri=d;
+        if(icerik < d->icerik) d=d->sol;
+        else if(icerik > d->icerik) d= d->sag;
+        else return;
     }
-    return -1;
-}
-
-int sil(int sayi) {
-    if (ilk == NULL)
-        return -1;
-    else if (ilk->veri == sayi) {
-        silGecici = ilk;
-        ilk = ilk->sonraki;
-        free(silGecici);
-        return 1;
-    } else {
-        gecici = ilk;
-        while (gecici->sonraki != NULL) {
-            if (gecici->sonraki->veri == sayi) {
-                silGecici = gecici->sonraki;
-                gecici->sonraki = silGecici->sonraki;
-                free(silGecici);
-                return 1;
-            }
-            gecici = gecici->sonraki;
-        }
-
+    dugum=dugum_olustur(icerik);
+    if(agac->kok==NULL){
+        agac->kok = dugum;
+        return;
     }
-    return 0;
-}
-
-void bekle() {
-    char temp;
-    printf("DEVAM ICIN ENTER'A BAS!\n");
-    temp = getchar();
-    temp = getchar();
-    ekranTemizle();
+    if(icerik < geri->icerik) geri->sol = dugum;
+    else geri->sag = dugum;
 
 }
 
-void ekranTemizle() {
-    system("cls");
+
+void yazdir(struct dugum *kok){
+
+    if(kok==NULL) return;
+    printf("%4d ",kok->icerik);
+    yazdir(kok->sol);
+    yazdir(kok->sag);
+
 }
 
-void menu() {
 
-    int secim, sayi, sira, kontrol;
+int dugum_sayisi(struct dugum *kok){
+    if(kok==NULL) return 0;
+    return 1+dugum_sayisi(kok->sol)+dugum_sayisi(kok->sag);
+}
 
-    printf("\n1-ELEMAN EKLE\n\n");
-    printf("\n2-LISTELE\n\n");
-    printf("\n3-ARAMA YAP\n\n");
-    printf("\n4-ELEMAN SIL\n\n");
-    printf("\n5-CIKIS YAP\n\n");
+int agac_derinlik(struct dugum *kok){
+    if(kok == NULL) return 0;
+    int solDerinlik = agac_derinlik(kok->sol);
+    int sagDerinlik = agac_derinlik(kok->sag);
+    if(solDerinlik > sagDerinlik){
+        return (1 + solDerinlik);
+    }
+    else{
+        return (1 + sagDerinlik);
+    }
+}
 
-    scanf("%d", &secim);
-
-    switch (secim) {
-        case 1:
-            ekranTemizle();
-            printf("SAYI GIRINIZ: ");
-            scanf("%d", &sayi);
-            ekle(sayi);
-            bekle();
-            break;
-        case 2:
-            ekranTemizle();
-            listele();
-            break;
-        case 3:
-            ekranTemizle();
-            if (ilk == NULL) {
-                printf("Liste Bos!\n");
-                bekle();
-                break;
-            }
-            printf("SAYI GIRINIZ: ");
-            scanf("%d", &sayi);
-            sira = ara(sayi);
-            if (sira == -1)
-                printf("Girilen sayi bulunamadý!\n");
-            else
-                printf("%d sayisi listenin %d. sirasinda\n", sayi, sira);
-            bekle();
-            break;
-        case 4:
-            ekranTemizle();
-            if(ilk == NULL){
-                printf("Liste Bos!\n");
-                bekle();
-                break;
-            }
-            printf("SAYI GIRINIZ: ");
-            scanf("%d", &sayi);
-            kontrol = sil(sayi);
-            if (kontrol == -1)
-                printf("Liste Bos!\n");
-            else if (kontrol == 0)
-                printf("%d listede bulunamadi!\n", sayi);
-            else
-                printf("%d silindi\n", sayi);
-            bekle();
-
-            break;
-        case 5:
-            ekranTemizle();
-            printf("BiTTi !\n");
-            exit(0);
-            break;
-        default:
-            ekranTemizle();
-            printf("Hatali Secim\n");
-            bekle();
+int toplam_derinlik(struct dugum *kok,int dugumDerinlik){
+    if(kok == NULL) return 0;
+    else{
+        return (dugumDerinlik + toplam_derinlik(kok->sol,dugumDerinlik+1) + toplam_derinlik(kok->sag,dugumDerinlik+1));
     }
 }
 
 
-int main() {
 
-    while (1) {
-        ekranTemizle();
-        menu();
+int main(int argc, char** argv) {
+    srand(time(NULL));
+    struct ikili_arama_agaci *agac;
+    ikili_arama_agaci_olustur(&agac);
+    int elemanSayisi;
+    int i;
+    printf("Agacin eleman sayisini giriniz = ");
+    scanf("%d",&elemanSayisi);
+    for(i=0;i<elemanSayisi;i++){
+        ekle(agac,1+rand()%100);
     }
+
+    yazdir(agac->kok);
+    printf("\n");
+    printf("Agacin Derinligi = %d\n",agac_derinlik(agac->kok));
+    printf("Toplam Derinlik = %d\n",toplam_derinlik(agac->kok,0));
+    printf("Sonuc(Toplam Derinlik / Eleman Sayisi) = %d",(toplam_derinlik(agac->kok,0)) / elemanSayisi);
+
     return 0;
 }
